@@ -31,3 +31,7 @@ rules:
           ref: refs/heads/master
     do:
       content: reload
+
+drivers:
+  daemon:
+    configCheckInterval: "60m"

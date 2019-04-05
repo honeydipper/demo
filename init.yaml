@@ -4,7 +4,7 @@ repos:
   - repo: https://github.com/honeydipper/honeydipper-config-essentials.git
     path: /gcloud
 
-system:
+systems:
   github:
     data:
       token: honeydipper_demo

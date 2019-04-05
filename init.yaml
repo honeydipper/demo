@@ -4,6 +4,11 @@ repos:
   - repo: https://github.com/honeydipper/honeydipper-config-essentials.git
     path: /gcloud
 
+system:
+  github:
+    data:
+      token: honeydipper_demo
+
 rules:
   - when:
       driver: webhook

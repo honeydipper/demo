@@ -10,7 +10,7 @@ rules:
       conditions:
         url: '/health/hz'
         form:
-          token: 1234567890
+          token: '1234567890'
         method: GET
     do:
       content: noop

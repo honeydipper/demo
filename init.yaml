@@ -19,3 +19,15 @@ rules:
         method: GET
     do:
       content: noop
+
+  - when:
+      source:
+        system: github
+        trigger: push
+      conditions:
+        json:
+          repository:
+            name: demo
+          ref: refs/heads/master
+    do:
+      content: reload

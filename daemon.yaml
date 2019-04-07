@@ -1,0 +1,4 @@
+---
+drivers:
+  daemon:
+    configCheckInterval: "60m"

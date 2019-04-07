@@ -1,0 +1,13 @@
+---
+rules:
+  - when:
+      source:
+        system: github
+        trigger: push
+      conditions:
+        json:
+          repository:
+            full_name: honeydipper/demo
+          ref: refs/heads/master
+    do:
+      content: reload

@@ -1,0 +1,22 @@
+workflows:
+  helm_apply:
+    content: run_kubernetes
+    data:
+      steps:
+        - git-clone
+        - type: helm
+          workingDir: /honeydipper/git
+          script: |
+            #!/bin/bash
+            for r in releases/*; do
+              rname=$(basename $r)
+              if [[ -f $r/chart ]]; then
+                helm upgrade -f $r/values.yaml --install $rname $(<$r/chart)
+              elif [[ -d $r/chart ]]; then
+                helm upgrade -f $r/values.yaml --install $rname $(ls -1 $r/chart/*)
+              elif [[ -f $r/absent ]]; then
+                if [[ -n "$(helm ls $rname)" ]]; then
+                  helm delete --purge $r
+                fi
+              fi
+            done

@@ -1,0 +1,14 @@
+systems:
+  matrix:
+    extends:
+      - kubernetes
+    data:
+      kubernetes:
+        type: local
+
+  job_runner:
+    extends:
+      - matrix
+    data:
+      git_url: git@github.com:honeydipper/helm_demo.git
+      git_key_secret: git-deploy-key

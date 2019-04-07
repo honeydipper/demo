@@ -1,0 +1,28 @@
+---
+systems:
+  github:
+    data:
+      token: honeydipper_demo
+
+rules:
+  - when:
+      driver: webhook
+      conditions:
+        url: '/health/hz'
+        form:
+          token: '1234567890'
+        method: GET
+    do:
+      content: noop
+
+  - when:
+      source:
+        system: github
+        trigger: push
+      conditions:
+        json:
+          repository:
+            full_name: honeydipper/demo
+          ref: refs/heads/master
+    do:
+      content: reload

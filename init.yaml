@@ -4,34 +4,9 @@ repos:
   - repo: https://github.com/honeydipper/honeydipper-config-essentials.git
     path: /gcloud
 
-systems:
-  github:
-    data:
-      token: honeydipper_demo
-
-rules:
-  - when:
-      driver: webhook
-      conditions:
-        url: '/health/hz'
-        form:
-          token: '1234567890'
-        method: GET
-    do:
-      content: noop
-
-  - when:
-      source:
-        system: github
-        trigger: push
-      conditions:
-        json:
-          repository:
-            name: demo
-          ref: refs/heads/master
-    do:
-      content: reload
-
-drivers:
-  daemon:
-    configCheckInterval: "60m"
+includes:
+  - daemon.yaml
+  - integrations.yaml
+  - systems/init.yaml
+  - rules/init.yaml
+  - workflows/init.yaml

@@ -6,16 +6,3 @@ systems:
   slack:
     data:
       url: ENC[gcloud-kms,CiQAoraaKzvojBKwmhNUxeVD1hjctf9aP1e94nlBqXOOUj4Iom8SdgAW/P6lpABzkW9pkGZxy+s4JlUfYFQHETr3Hxx9XA8lsmyWUo+E/m3pIVtboDZe7kNI+DFz0MPJXlosSQIRCUyDiPMiQysqidlhBmHmLXto4mcz4fqGft5Sz2LYBi7cLjcmNc/g9b8jjQvyyIMdHPM89OqCJs4=]
-
-rules:
-  - when:
-      source:
-        system: github
-        trigger: push
-      conditions:
-        json:
-          repository:
-            full_name: honeydipper/demo
-          ref: refs/heads/master
-    do:
-      content: reload

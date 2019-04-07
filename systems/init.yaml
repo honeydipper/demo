@@ -10,5 +10,5 @@ systems:
     extends:
       - matrix
     data:
-      git_url: git@github.com:honeydipper/helm_demo.git
+      git_url: git@github.com:honeydipper/infrastructure_demo.git
       git_key_secret: git-deploy-key

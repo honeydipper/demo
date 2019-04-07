@@ -10,4 +10,21 @@ rules:
             full_name: honeydipper/demo
           ref: refs/heads/master
     do:
-      content: reload
+      content: pipe
+      data:
+        steps:
+          - name: reload
+            work:
+              content: reload
+          - name: notify
+            work:
+              content: notify
+              data:
+                notify: '#demo'
+                is_error: '{{ `{{ empty .wfdata.step }}` }}'
+                message:
+                  attachments:
+                    - color: '{{ `{{ empty .wfdata.step | ternary "good" "danger" }}` }}'
+                      text: |
+                        Reload honeydipper on git push: {{ `{{ empty .wfdata.step | ternary "succeeded" "failed" }}` }}.
+                        commit `{{ substr 0 8 .event.json.head_commit.id }}`: `{{ .event.json.head_commit.message }}` 

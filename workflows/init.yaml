@@ -1,4 +1,5 @@
 ---
 includes:
-  - helm_apply.yaml
-  - secrets_apply.yaml
+  - helm.yaml
+  - secrets.yaml
+  - terraform.yaml

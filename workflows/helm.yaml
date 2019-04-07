@@ -5,7 +5,7 @@ workflows:
       steps:
         - git-clone
         - type: helm
-          workingDir: /honeydipper/git
+          workingDir: /honeydipper/git/clusters/{{ .wfdata.managed_cluster }}
           script: |
             #!/bin/bash
             for r in releases/*; do

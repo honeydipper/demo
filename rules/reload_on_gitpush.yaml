@@ -20,7 +20,8 @@ rules:
             work:
               content: notify
               data:
-                notify: '#demo'
+                notify:
+                  - '#demo'
                 is_error: '{{ `{{ empty .wfdata.step }}` }}'
                 message:
                   attachments:

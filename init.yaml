@@ -6,6 +6,7 @@ repos:
 
 includes:
   - daemon.yaml
+  - drivers.yaml
   - integrations.yaml
   - systems/init.yaml
   - rules/init.yaml

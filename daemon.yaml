@@ -2,3 +2,4 @@
 drivers:
   daemon:
     configCheckInterval: "60m"
+    loglevel: 'DEBUG'

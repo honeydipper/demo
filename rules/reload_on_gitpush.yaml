@@ -12,6 +12,7 @@ rules:
     do:
       content: pipe
       data:
+        on_error: final
         steps:
           - name: reload
             work:

@@ -23,7 +23,9 @@ rules:
               data:
                 notify:
                   - '#demo'
-                is_error: '{{ `{{ empty .wfdata.step }}` }}'
+                notify_on_error:
+                  - '#honeydipper'
+                is_error: '{{ `{{ empty .wfdata.step | not }}` }}'
                 message:
                   attachments:
                     - color: '{{ `{{ empty .wfdata.step | ternary "good" "danger" }}` }}'

@@ -3,7 +3,7 @@ rules:
   - when:
       source:
         system: github
-        trigger: pull_request
+        trigger: pullrequest
     do:
       type: parallel
       content:

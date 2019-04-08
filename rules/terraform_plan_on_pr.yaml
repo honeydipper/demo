@@ -38,7 +38,7 @@ rules:
                   system: github
                   function: createComment
               data:
-                message: '{{ values (index (values .data.log) 0) | join "\n" }}'
+                message: '{{ `{{ values (index (values .data.log) 0) | join "\n" }}` }}'
           - name: finalize commit status
             work:
               type: function

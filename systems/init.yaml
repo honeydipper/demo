@@ -5,7 +5,10 @@ systems:
     data:
       kubernetes:
         source:
-          type: local
+          type: gcloud-gke
+          project: the-pulsar-236622
+          location: us-central1-a
+          cluster: matrix
 
   job_runner:
     extends:

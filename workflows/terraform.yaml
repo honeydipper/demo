@@ -2,7 +2,7 @@ workflows:
   tf_plan:
     content: run_kubernetes
     data:
-      steps:
+      '*steps':
         - git-clone
         - type: tf
           workingDir: /honeydipper/git/terraform
@@ -12,7 +12,7 @@ workflows:
   tf_apply:
     content: run_kubernetes
     data:
-      steps:
+      '*steps':
         - git-clone
         - type: tf
           workingDir: /honeydipper/git/terraform

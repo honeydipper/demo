@@ -4,7 +4,8 @@ systems:
       - kubernetes
     data:
       kubernetes:
-        type: local
+        source:
+          type: local
 
   job_runner:
     extends:

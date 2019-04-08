@@ -3,6 +3,7 @@ systems:
   github:
     data:
       token: honeydipper_demo
+      oauth_token: ENC[gcloud-kms,CiQAoraaK/tO7KPgkyKbSN22dP05BXQjN9yb5G2fip0ly3RvMS4SUQAW/P6lcrQPTIl3UuvNN553pD8WNLXHnITUt2nP6Tg23yxbXK09B8k3iFNbvR7NT75RqnOjuX034VKv5M3yaTQ/au0G+LpG0hLzYX8/RA2UGg==]
   slack:
     data:
       url: ENC[gcloud-kms,CiQAoraaKzvojBKwmhNUxeVD1hjctf9aP1e94nlBqXOOUj4Iom8SdgAW/P6lpABzkW9pkGZxy+s4JlUfYFQHETr3Hxx9XA8lsmyWUo+E/m3pIVtboDZe7kNI+DFz0MPJXlosSQIRCUyDiPMiQysqidlhBmHmLXto4mcz4fqGft5Sz2LYBi7cLjcmNc/g9b8jjQvyyIMdHPM89OqCJs4=]

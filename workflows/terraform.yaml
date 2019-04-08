@@ -9,6 +9,51 @@ workflows:
           script: |
             terraform init -no-color
             terraform plan -no-color
+
+  tf_plan_with_pr:
+    content: pipe
+    data:
+      on_error: final
+      steps:
+        - name: create commit status msg
+          work:
+            type: function
+            content:
+              target:
+                system: github
+                function: createStatus
+            data:
+              status:
+                state: pending
+                description: Honeydipper is running tf plan...
+                context: honeydipper/tf-plan
+        - name: run tf plan
+          work:
+            content: tf_plan
+            data:
+              system: job_runner
+              branch: '{{ .event.json.pull_request.head.ref }}'
+        - name: send plan output to PR comment
+          work:
+            type: function
+            content:
+              target:
+                system: github
+                function: createComment
+            data:
+              message: '{{ `{{ values (index (values .data.log) 0) | join "\n" }}` }}'
+        - name: finalize commit status
+          work:
+            type: function
+            content:
+              target:
+                system: github
+                function: createStatus
+            data:
+              status:
+                state: '{{ `{{ empty .wfdata.step | ternary "success" "failure" }}` }}'
+                description: Honeydipper tf plan {{ `{{ empty .wfdata.step | ternary "succeeded" "failed" }}` }}
+                context: honeydipper/tf-plan
   tf_apply:
     content: run_kubernetes
     data:

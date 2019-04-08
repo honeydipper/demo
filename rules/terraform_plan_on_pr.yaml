@@ -30,6 +30,7 @@ rules:
               content: tf_plan
               data:
                 system: job_runner
+                branch: '{{ .event.json.pull_request.head.ref }}'
           - name: send plan output to PR comment
             work:
               type: function

@@ -5,7 +5,7 @@ workflows:
     content: pipe
     data:
       on_error: exit
-      steps:
+      "*steps":
         - name: getting changed files
           work:
             type: function

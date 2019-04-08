@@ -3,8 +3,9 @@ workflows:
     content: run_kubernetes
     data:
       '*steps':
-        - git-clone
-        - type: tf
+        checkout: git-clone
+        plan:
+          type: tf
           workingDir: /honeydipper/git/terraform
           script: |
             terraform init -no-color
@@ -14,7 +15,7 @@ workflows:
     content: pipe
     data:
       on_error: final
-      steps:
+      '*steps':
         - name: create commit status msg
           work:
             type: function
@@ -41,7 +42,7 @@ workflows:
                 system: github
                 function: createComment
             data:
-              message: '{{ `{{ values (index (values .data.log) 0) | join "\n" }}` }}'
+              message: '{{ `{{ index (values .data.log | first) "step-plan" }}` }}'
         - name: finalize commit status
           work:
             type: function

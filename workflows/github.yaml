@@ -32,5 +32,6 @@ workflows:
                 {{- end }}
                 {{- end }}
                 {{- if (not $found) }}failure
+                {{- end }}
                 ` }}
               reason: Files under `{{ .wfdata.prefix }}` not changed

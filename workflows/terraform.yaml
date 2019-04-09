@@ -48,7 +48,10 @@ workflows:
                 replace "Refreshing Terraform state in-memory prior to plan..." "<details><summary>Refreshing</summary><p>" |
                 replace "----\n\nAn execution plan has been generated" "----\n\n</p></details><details><summary>Plan</summary><p>An execution plan has been generated" |
                 replace "following symbols:" "following symbols:\n" |
-                replace "perform the following actions:\n\n" "perform the following actions:\n\n  "
+                replace "perform the following actions:\n\n" "perform the following actions:\n\n  " |
+                replace "\n  + " "\n  * + " |
+                replace "\n  - " "\n  * - " |
+                replace "\n  ~ " "\n  * ~ "
                 }}`
                 }}
         - name: send plan output to PR comment

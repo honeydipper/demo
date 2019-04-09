@@ -25,7 +25,7 @@ workflows:
                 {{- $found := false }}
                 {{- range .data.json }}
                 {{- if (not $found) }}
-                {{- if (index . "filename" | hasPrefix .wfdata.prefix) }}success
+                {{- if (hasPrefix .wfdata.prefix (index . "filename")) }}success
                 {{- $found = true }}
                 {{- end }}
                 {{- end }}

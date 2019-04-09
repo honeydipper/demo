@@ -40,15 +40,15 @@ workflows:
             content:
               work_data:
                 kube_job_status: '{{ `{{ .data.kube_job_status }}` }}'
-              log: |
+              log: >-
                 {{
-                  `{{ index (values .data.log | first) "step-plan" |
-                    replace "Initializing the backend..." "<details><summary>Initializing</summary><p>" |
-                    replace "remind you to do so if necessary." "remind you to do so if necessary.</p></details>" |
-                    replace "Refreshing Terraform state in-memory prior to plan..." "<details><summary>Refreshing</summary><p>" |
-                    replace "----\\n\\nAn execution plan has been generated" "----\\n\\n</p></details><details><summary>Plan</summary><p>An execution plan has been generated" |
-                    replace "----\\n\\nNote:" "----\\n\\n</p></details>Note:"
-                  }}`
+                `{{ index (values .data.log | first) "step-plan" |
+                replace "Initializing the backend..." "<details><summary>Initializing</summary><p>" |
+                replace "remind you to do so if necessary." "remind you to do so if necessary.</p></details>" |
+                replace "Refreshing Terraform state in-memory prior to plan..." "<details><summary>Refreshing</summary><p>" |
+                replace "----\\n\\nAn execution plan has been generated" "----\\n\\n</p></details><details><summary>Plan</summary><p>An execution plan has been generated" |
+                replace "----\\n\\nNote:" "----\\n\\n</p></details>Note:"
+                }}`
                 }}
         - name: send plan output to PR comment
           work:

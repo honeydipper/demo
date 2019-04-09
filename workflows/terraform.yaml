@@ -10,7 +10,6 @@ workflows:
           script: |
             terraform init -no-color
             terraform plan -no-color
-            exit 1
 
   tf_plan_with_pr:
     content: pipe
@@ -48,6 +47,8 @@ workflows:
                 replace "remind you to do so if necessary." "remind you to do so if necessary.</p></details>" |
                 replace "Refreshing Terraform state in-memory prior to plan..." "<details><summary>Refreshing</summary><p>" |
                 replace "----\n\nAn execution plan has been generated" "----\n\n</p></details><details><summary>Plan</summary><p>An execution plan has been generated" |
+                replace "following symbols:" "following symbols:\n" |
+                replace "perform the following actions:" "perform the following actions:\n"
                 }}`
                 }}
         - name: send plan output to PR comment

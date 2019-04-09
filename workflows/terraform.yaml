@@ -34,6 +34,22 @@ workflows:
             data:
               system: job_runner
               branch: '{{ .event.json.pull_request.head.ref }}'
+        - name: formatting plan output
+          work:
+            type: data
+            content:
+              work_data:
+                kube_job_status: '{{ `{{ .data.kube_job_status }}` }}'
+              log: |
+                {{
+                  `{{ index (values .data.log | first) "step-plan" |
+                    replace "Initializing the backend..." "<details><summary>Initializing</summary><p>" |
+                    replace "remind you to do so if necessary." "remind you to do so if necessary.</p></details>" |
+                    replace "Refreshing Terraform state in-memory prior to plan..." "<details><summary>Refreshing</summary><p>" |
+                    replace "----\n\nAn execution plan has been generated" "----\n\n</p></details><details><summary>Plan</summary><p>An execution plan has been generated" |
+                    replace "----\n\nNote:" "----\n\n</p></details>Note:"
+                  }}`
+                }}
         - name: send plan output to PR comment
           work:
             type: function
@@ -42,7 +58,7 @@ workflows:
                 system: github
                 function: createComment
             data:
-              message: '{{ `{{ index (values .data.log | first) "step-plan" }}` }}'
+              message: '{{ `{{ .data.log }}` }}'
         - name: finalize commit status
           work:
             type: function
@@ -52,8 +68,8 @@ workflows:
                 function: createStatus
             data:
               status:
-                state: '{{ `{{ empty .wfdata.step | ternary "success" "failure" }}` }}'
-                description: Honeydipper tf plan {{ `{{ empty .wfdata.step | ternary "succeeded" "failed" }}` }}
+                state: '{{ `{{ and (empty .wfdata.step) (eq (default "" .wfdata.work_data.kube_job_status) "true") | ternary "success" "failure" }}` }}'
+                description: Honeydipper tf plan {{ `{{ and (empty .wfdata.step) (eq (default "" .wfdata.work_data.kube_job_status) "true") | ternary "succeeded" "failed" }}` }}
                 context: honeydipper/tf-plan
   tf_apply:
     content: run_kubernetes

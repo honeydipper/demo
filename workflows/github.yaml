@@ -4,7 +4,7 @@ workflows:
   git_PR_contains:
     content: pipe
     data:
-      on_error: exit
+      on_error: final
       "*steps":
         - name: getting changed files
           work:

@@ -3,8 +3,8 @@ workflows:
     content: run_kubernetes
     data:
       '*steps':
-        checkout: git-clone
-        plan:
+        - git-clone
+        - name: plan
           type: tf
           workingDir: /honeydipper/git/terraform
           script: |

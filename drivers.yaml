@@ -2,3 +2,5 @@
 drivers:
   gcloud-kms:
     keyname: projects/the-pulsar-236622/locations/global/keyRings/honeydipper/cryptoKeys/secure_config
+  web:
+    loglevel: DEBUG

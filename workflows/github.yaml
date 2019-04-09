@@ -23,14 +23,14 @@ workflows:
               work_status: >-
                 {{ `
                 {{- $found := false }}
+                {{- $wfdata := .wfdata }}
                 {{- range .data.json }}
                 {{- if (not $found) }}
-                {{- if (hasPrefix .wfdata.prefix (index . "filename")) }}success
+                {{- if (index . "filename" | hasPrefix $wfdata.prefix) }}success
                 {{- $found = true }}
                 {{- end }}
                 {{- end }}
                 {{- end }}
                 {{- if (not $found) }}failure
-                {{- end }}
                 ` }}
               reason: Files under `{{ .wfdata.prefix }}` not changed

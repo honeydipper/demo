@@ -4,7 +4,7 @@ workflows:
   git_PR_contains:
     content: pipe
     data:
-      on_error: final
+      on_error: exit
       "*steps":
         - name: getting changed files
           work:
@@ -32,6 +32,6 @@ workflows:
                 {{- end }}
                 {{- end }}
                 {{- if (not $found) }}failure
-                {{- end }}
-                ` }}
+                {{- end }}`
+                }}
               reason: Files under `{{ .wfdata.prefix }}` not changed

@@ -14,7 +14,7 @@ workflows:
                 system: github
                 function: api
               parameters:
-                URL: 'https://api.github.com/repos/{{ .event.json.repository.full_name }}/pulls/{{ .event.json.number }}/files'
+                URL: 'https://api.github.com/repos/{{ coalesce .wfdata.repo .event.json.repository.full_name }}/pulls/{{ coalesce .wfdata.number .event.json.number }}/files'
                 method: GET
         - name: scan for terraform files
           work:

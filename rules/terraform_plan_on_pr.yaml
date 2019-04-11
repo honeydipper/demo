@@ -20,4 +20,47 @@ rules:
                 prefix: terraform/
           - name: run terraform plan
             work:
-              content: tf_plan_with_pr
+              content: tf_PR_run
+              data:
+                action: plan
+  - when:
+      source:
+        system: github
+        trigger: pr_commented
+      conditions:
+        json:
+          repository:
+            full_name: honeydipper/infrastructure-demo
+          comment:
+            body: :regex:^\s*\/honeydipper\s+tf\s+(plan)|(apply)\s*$
+          issue:
+            state: open
+    do:
+      content: pipe
+      data:
+        on_error: exit
+        repo: '{{ .event.json.repository.full_name }}'
+        number: '{{ .event.json.issue.pull_request.url | splitList "/" | last }}'
+        steps:
+          - name: check if terraform files changed
+            work:
+              content: git_PR_contains
+              data:
+                prefix: terraform/
+          - name: get the info of PR
+            work:
+              type: function
+              content:
+                target:
+                  system: github
+                  function: api
+                parameters:
+                  URL: '{{ .event.json.issue.pull_request.url }}'
+                  method: GET
+          - name: run terraform action
+            work:
+              data:
+                sha: '{{ `{{ .data.json.head.sha }}` }}'
+                branch: '{{ `{{ .data.json.head.ref }}` }}'
+                action: '{{ .event.json.comment.body | trim | splitList " " | last }}'
+              content: tf_PR_run

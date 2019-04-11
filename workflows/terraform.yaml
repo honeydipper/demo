@@ -11,7 +11,20 @@ workflows:
             terraform init -no-color
             terraform plan -no-color
 
-  tf_plan_with_pr:
+  tf_apply:
+    content: run_kubernetes
+    data:
+      '*steps':
+        - git-clone
+        - name: apply
+          type: tf
+          workingDir: /honeydipper/git/terraform
+          script: |
+            terraform init -no-color
+            echo Applying...
+            terraform apply -no-color -auto-approve
+
+  tf_PR_run:
     content: pipe
     data:
       on_error: final
@@ -26,15 +39,16 @@ workflows:
             data:
               status:
                 state: pending
-                description: Honeydipper is running tf plan...
-                context: honeydipper/tf-plan
-        - name: run tf plan
+                description: Running tf {{ .wfdata.action }}...
+              context: honeydipper/tf-{{ .wfdata.action }}
+        - name: run tf {{ .wfdata.action }}
           work:
-            content: tf_plan
+            content: tf_{{ .wfdata.action }}
             data:
               system: job_runner
-              branch: '{{ .event.json.pull_request.head.ref }}'
-        - name: formatting plan output
+              branch: '{{ coalesce .wfdata.branch .event.json.pull_request.head.ref }}'
+              timeout: '1800'
+        - name: formatting {{ .wfdata.action }} output
           work:
             type: data
             content:
@@ -42,19 +56,32 @@ workflows:
                 kube_job_status: '{{ `{{ .data.kube_job_status }}` }}'
               log: >-
                 {{
-                `{{ index (values .data.log | first) "step-plan" |
-                replace "Initializing the backend..." "<details><summary>Initializing</summary><p>" |
-                replace "remind you to do so if necessary." "remind you to do so if necessary.</p></details>" |
-                replace "Refreshing Terraform state in-memory prior to plan..." "<details><summary>Refreshing</summary><p>" |
-                replace "----\n\nAn execution plan has been generated" "----\n\n</p></details><details><summary>Plan</summary><p>An execution plan has been generated" |
-                replace "following symbols:" "following symbols:\n" |
-                replace "perform the following actions:\n\n" "perform the following actions:\n\n  " |
-                replace "\n  + " "\n  * \\+ " |
-                replace "\n  - " "\n  * \\- " |
-                replace "\n  ~ " "\n  * \\~ "
+                `{{ index (values .data.log | first) (.wfdata.action | printf "step-%s") |
+                replace "&" "&amp;" |
+                replace "<" "&lt;" |
+                replace ">" "&gt;" |
+                printf "<details><summary>Initialzing</summary><pre><code>%s" |
+                replace "Refreshing Terraform state in-memory prior to plan..." "</code></pre></details><details><summary>Refreshing</summary><pre><code>" |
+                replace "----\n\nAn execution plan has been generated" "----\n\n</code></pre></details><details><summary>Plan</summary><pre><code>An execution plan has been generated" |
+                replace "\nApplying..." "</code></pre></details>\n<details><summary>Apply</summary><pre><code>" |
+                replace "\n+" "\n  +" |
+                replace "\n  +" "\n  <img src='https://placehold.it/30x10/c5f015/000000?text=+'></img> +" |
+                replace "\n  ~" "\n  <img src='https://placehold.it/30x10/f4d03f/000000?text=+'></img> ~" |
+                replace "\n  -" "\n  <img src='https://placehold.it/30x10/c70039/000000?text=+'></img> -" |
+                replace "\nWarning: " "\n<img src='https://placehold.it/30x10/f4d03f/000000?text=+'></img> Warning: " |
+                replace "\nError: " "\n<img src='https://placehold.it/30x10/c70039/000000?text=+'></img> Error: " |
+                replace "\nPlan:" "\n\n<img src='https://placehold.it/30x10/3933ff/000000?text=+'></img> <strong>Plan: " |
+                replace "to destroy.\n" "to destroy.</strong>\n" |
+                replace "\n" "<br/>\n" |
+                printf "%s</code></pre></details>"
                 }}`
                 }}
-        - name: send plan output to PR comment
+                {{ eq .wfdata.action "plan" | ternary
+                "\n\n<img src='https://placehold.it/30x10/3933ff/000000?text=+'></img> Type `/honeydipper tf apply` to apply the plan.
+                \n\n<img src='https://placehold.it/30x10/c70039/000000?text=+'></img> You are responsible to ensure that no conflict is introduced after your last plan."
+                ""
+                }}
+        - name: send {{ .wfdata.action }} output to PR comment
           work:
             type: function
             content:
@@ -73,15 +100,5 @@ workflows:
             data:
               status:
                 state: '{{ `{{ and (empty .wfdata.step) (eq (default "" .wfdata.work_data.kube_job_status) "true") | ternary "success" "failure" }}` }}'
-                description: Honeydipper tf plan {{ `{{ and (empty .wfdata.step) (eq (default "" .wfdata.work_data.kube_job_status) "true") | ternary "succeeded" "failed" }}` }}
-                context: honeydipper/tf-plan
-  tf_apply:
-    content: run_kubernetes
-    data:
-      '*steps':
-        - git-clone
-        - type: tf
-          workingDir: /honeydipper/git/terraform
-          script: |
-            terraform init -no-color
-            terraform apply -no-color -auto-approve
+                description: Honeydipper tf {{ .wfdata.action }}  {{ `{{ and (empty .wfdata.step) (eq (default "" .wfdata.work_data.kube_job_status) "true") | ternary "succeeded" "failed" }}` }}
+              context: honeydipper/tf-{{ .wfdata.action }}

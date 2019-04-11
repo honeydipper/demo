@@ -64,7 +64,7 @@ workflows:
                 replace "Refreshing Terraform state in-memory prior to plan..." "</code></pre></details><details><summary>Refreshing</summary><pre><code>" |
                 replace "----\n\nAn execution plan has been generated" "----\n\n</code></pre></details><details><summary>Plan</summary><pre><code>An execution plan has been generated" |
                 replace "\nApplying..." "</code></pre></details>\n<details><summary>Apply</summary><pre><code>" |
-                replace "\n+" "\n  +" |
+                replace "the following actions:\n\n" "the following actions:\n\n  " |
                 replace "\n  +" "\n  <img src='https://placehold.it/30x10/c5f015/000000?text=+'></img> +" |
                 replace "\n  ~" "\n  <img src='https://placehold.it/30x10/f4d03f/000000?text=+'></img> ~" |
                 replace "\n  -" "\n  <img src='https://placehold.it/30x10/c70039/000000?text=+'></img> -" |

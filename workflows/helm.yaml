@@ -2,7 +2,7 @@ workflows:
   helm_apply:
     content: run_kubernetes
     data:
-      steps:
+      "*steps":
         - git-clone
         - type: helm
           workingDir: /honeydipper/git/clusters/{{ .wfdata.managed_cluster }}

@@ -1,0 +1,55 @@
+---
+systems:
+  github:
+    functions:
+      get_PR_files:
+        target:
+          system: github
+          function: api
+        parameters:
+          URL: 'https://api.github.com/repos/{{ coalesce .wfdata.repo .event.json.repository.full_name }}/pulls/{{ coalesce .wfdata.number .event.json.number }}/files'
+          method: GET
+
+workflows:
+  git_PR_contains:
+    type: data
+    content:
+      work_status: >-
+        {{- $found := false }}
+        {{- $wfdata := .wfdata }}
+        {{- range (coalesce .wfdata.files .data.json .wfdata.work_data.json) }}
+        {{- if (not $found) }}
+        {{- $file := (index . "filename") }}
+        {{- range $wfdata.patterns }}
+        {{- if (not $found) }}
+        {{- if (regexMatch . $file) }}success
+        {{- $found = true }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- if (not $found) }}failure
+        {{- end }}
+      reason: No file matching any of the patterns in PR
+
+  git_fetch_PR_contains:
+    content: pipe
+    data:
+      on_error: exit
+      "*steps":
+        - name: fetch PR files
+          work:
+            type: function
+            content:
+              target:
+                system: '{{ default "github" .wfdata.git_system }}'
+                function: get_PR_files
+        - name: preserve PR files
+          work:
+            type: data
+            content:
+              work_data: '{{ `{{ .data | toJson | printf ":yaml:%s" }}` }}'
+        - name: check PR files
+          work:
+            content: git_PR_contains

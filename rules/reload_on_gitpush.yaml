@@ -13,7 +13,7 @@ rules:
       content: pipe
       data:
         on_error: final
-        steps:
+        "*steps":
           - name: reload
             work:
               content: reload

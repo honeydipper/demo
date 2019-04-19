@@ -3,4 +3,3 @@ includes:
   - helm.yaml
   - secrets.yaml
   - terraform.yaml
-  - github.yaml

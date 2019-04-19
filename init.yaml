@@ -8,6 +8,7 @@ includes:
   - daemon.yaml
   - drivers.yaml
   - integrations.yaml
+  - github.yaml
   - systems/init.yaml
   - rules/init.yaml
   - workflows/init.yaml

@@ -1,30 +1,82 @@
 workflows:
-  tf_plan:
+  tf_action:
     content: run_kubernetes
     data:
-      '*steps':
+      env:
+        - name: TF_LOCK_ID
+          value: :path:wfdata.tf_lock_id
+        - name: LOCK_PROJECT
+          value: :path:wfdata.lock_project
+        - name: TF_PROJECT_DIR
+          value: :path:wfdata.tf_project_dir
+      "*steps":
         - git-clone
-        - name: plan
+        - name: "{{ .wfdata.action }}"
           type: tf
-          workingDir: /honeydipper/git/terraform
+          workingDir: /honeydipper/git/{{ .wfdata.tf_project_dir }}
           script: |
-            terraform init -no-color
-            terraform plan -no-color
+            #!/bin/sh
+            set -eo pipefail
+
+            function tf_unlock() {
+              terraform force-unlock -no-color -force $TF_LOCK_ID
+            }
+            function tf_lock() {
+              terraform console -no-color >/dev/null &
+              pid=$!
+              sleep 0.5
+              kill -9 $(pstree -p $pid | tr '()' '\n' | grep '^[0-9]\+$')
+              # this should leave a lock on tf backend
+              lockid=$(terraform console -no-color </dev/null 2>&1 | grep 'ID:' | sed 's/^.*[[:space:]]//g' || true)
+              echo "Acquired lock ID: $TF_PROJECT_DIR $lockid "
+            }
+
+            {{ .wfdata.tf_script | indent 4 | trim }}
+
+  tf_plan:
+    content: tf_action
+    data:
+      tf_script: |
+        terraform init -no-color
+        [[ -n "$TF_LOCK_ID" ]] && tf_unlock
+        terraform plan -no-color
+        [[ -n "$LOCK_PROJECT" ]] && tf_lock
 
   tf_apply:
-    content: run_kubernetes
+    content: tf_action
     data:
-      '*steps':
-        - git-clone
-        - name: apply
-          type: tf
-          workingDir: /honeydipper/git/terraform
-          script: |
-            terraform init -no-color
-            echo Applying...
-            terraform apply -no-color -auto-approve
+      tf_script: |
+        if [[ -z "$TF_LOCK_ID" ]] && [[ -n "$LOCK_PROJECT" ]]; then
+          echo Error: please run tf plan for this project to acquire a lock >&2
+          exit 1
+        fi
+        terraform init -no-color
+        if [[ -n "$LOCK_PROJECT" ]] && ! tf_unlock; then
+          echo Error: unable to unlock with given lock ID: $TF_LOCK_ID, please re-run tf plan for this project >&2
+          exit 1
+        fi
+        echo Applying...
+        terraform apply -no-color -auto-approve
 
-  tf_PR_run:
+  tf_unlock:
+    content: tf_action
+    data:
+      tf_script: |
+        terraform init -no-color
+        tf_unlock
+
+  tf_unlock_from_plan:
+    type: function
+    content:
+      driver: redispubsub
+      rawAction: send
+      parameters:
+        broadcastSubject: resume_session
+        key: '{{ printf "tf-lock-%s-%s" (coalesce .wfdata.repo .event.json.repository.full_name) (coalesce .wfdata.number .event.json.number) }}'
+        labels:
+          status: success
+
+  tf_PR_cmd:
     content: pipe
     data:
       on_error: final
@@ -34,7 +86,7 @@ workflows:
             type: function
             content:
               target:
-                system: github
+                system: '{{ default "github" .wfdata.git_system }}'
                 function: createStatus
             data:
               status:
@@ -54,16 +106,26 @@ workflows:
             content:
               work_data:
                 kube_job_status: '{{ `{{ .data.kube_job_status }}` }}'
+                tf_lock_id: >-
+                  {{ .wfdata.action
+                  | eq "plan"
+                  | ternary
+                  `{{ regexSplit "Acquired lock ID: " (index (values .data.log | first) "step-plan") 2
+                  | last
+                  | splitList " "
+                  | rest | first }}`
+                  ""
+                  }}
               log: >-
                 {{
-                `{{ index (values .data.log | first) (.wfdata.action | printf "step-%s") |
+                `<details><summary>Initialzing</summary><pre><code>
+                {{ index (values .data.log | first) (.wfdata.action | printf "step-%s") |
                 replace "&" "&amp;" |
                 replace "<" "&lt;" |
                 replace ">" "&gt;" |
-                printf "<details><summary>Initialzing</summary><pre><code>%s" |
                 replace "Refreshing Terraform state in-memory prior to plan..." "</code></pre></details><details><summary>Refreshing</summary><pre><code>" |
                 replace "----\n\nAn execution plan has been generated" "----\n\n</code></pre></details><details><summary>Plan</summary><pre><code>An execution plan has been generated" |
-                replace "\nApplying..." "</code></pre></details>\n<details><summary>Apply</summary><pre><code>" |
+                replace "\nApplying..." "</code></pre></details>\n<details><summary>Apply</summary><pre><code>\nApplying..." |
                 replace "the following actions:\n\n" "the following actions:\n\n  " |
                 replace "\n  +" "\n  <img src='https://placehold.it/30x10/c5f015/000000?text=+'></img> +" |
                 replace "\n  ~" "\n  <img src='https://placehold.it/30x10/f4d03f/000000?text=+'></img> ~" |
@@ -72,21 +134,21 @@ workflows:
                 replace "\nError: " "\n<img src='https://placehold.it/30x10/c70039/000000?text=+'></img> Error: " |
                 replace "\nPlan:" "\n\n<img src='https://placehold.it/30x10/3933ff/000000?text=+'></img> <strong>Plan: " |
                 replace "to destroy.\n" "to destroy.</strong>\n" |
-                replace "\n" "<br/>\n" |
-                printf "%s</code></pre></details>"
-                }}`
+                replace "\nAcquired lock ID: " "</code></pre></details>\n<details><summary>Lock Info</summary><pre><code>\nAcquired lock ID: " |
+                replace "\n" "<br/>\n"
                 }}
-                {{ eq .wfdata.action "plan" | ternary
-                "\n\n<img src='https://placehold.it/30x10/3933ff/000000?text=+'></img> Type `/honeydipper tf apply` to apply the plan.
-                \n\n<img src='https://placehold.it/30x10/c70039/000000?text=+'></img> You are responsible to ensure that no conflict is introduced after your last plan."
+                </code></pre></details>
+                {{ eq .wfdata.action "plan" | and (toString .data.kube_job_status | eq "true") | ternary
+                (default "" .wfdata.message_on_success_plan | printf "\n\n%s")
                 ""
+                }}`
                 }}
         - name: send {{ .wfdata.action }} output to PR comment
           work:
             type: function
             content:
               target:
-                system: github
+                system: '{{ default "github" .wfdata.git_system }}'
                 function: createComment
             data:
               message: '{{ `{{ .data.log }}` }}'
@@ -95,10 +157,110 @@ workflows:
             type: function
             content:
               target:
-                system: github
+                system: '{{ default "github" .wfdata.git_system }}'
                 function: createStatus
             data:
               status:
                 state: '{{ `{{ and (empty .wfdata.step) (eq (default "" .wfdata.work_data.kube_job_status) "true") | ternary "success" "failure" }}` }}'
                 description: Honeydipper tf {{ .wfdata.action }}  {{ `{{ and (empty .wfdata.step) (eq (default "" .wfdata.work_data.kube_job_status) "true") | ternary "succeeded" "failed" }}` }}
               context: honeydipper/tf-{{ .wfdata.action }}
+
+  tf_PR_cmd_with_lock:
+    content: pipe
+    data:
+      on_error: exit
+      "*steps":
+        - name: handling unlock
+          work:
+            type: if
+            condition: '{{ eq .wfdata.action "unlock" }}'
+            content:
+              - type: pipe
+                content:
+                  - content: tf_unlock_from_plan
+                  - type: data
+                    content:
+                      work_status: failure
+              - type: data
+                content:
+                  work_status: success
+        - name: query PR comments to check for existing lock
+          work:
+            type: function
+            data:
+              resource_path: 'repos/{{ coalesce .wfdata.repo .event.json.repository.full_name }}/issues/{{ coalesce .wfdata.number .event.json.number }}/comments'
+            content:
+              target:
+                system: '{{ default "github" .wfdata.git_system }}'
+                function: api
+              parameters:
+                method: GET
+                form:
+                  since: '{{ now | dateModify (printf "-%s" (default "1h" .wfdata.tf_lock_timeout)) | ISO8601 }}'
+        - name: extract lock ID
+          work:
+            type: data
+            content:
+              work_data:
+                tf_lock_id: >-
+                  {{ `
+                  {{- $wfdata := .wfdata -}}
+                  {{- $found := false -}}
+                  {{- range (reverse .data.json) -}}
+                  {{- if (not $found) -}}
+                  {{- if (.body | contains (printf "Acquired lock ID: %s " $wfdata.tf_project_dir)) -}}
+                  {{- regexSplit "Acquired lock ID: " .body 2 | last | splitList " " | rest | first -}}
+                  {{- $found = true -}}
+                  {{- else if (.body | contains (printf "TF project unlocked: %s" $wfdata.tf_project_dir) | or (.body | contains "\nApplying...")) -}}
+                  {{- $found = true -}}
+                  {{- end -}}
+                  {{- end -}}
+                  {{- end -}}`
+                  }}
+        - name: take over the lock from previous workflow
+          work:
+            type: function
+            content:
+              driver: redispubsub
+              rawAction: send
+              parameters:
+                broadcastSubject: resume_session
+                key: '{{ printf "tf-lock-%s-%s" (coalesce .wfdata.repo .event.json.repository.full_name) (coalesce .wfdata.number .event.json.number) }}'
+                labels:
+                  status: failure
+        - name: action
+          work:
+            content: tf_PR_cmd
+            data:
+              tf_lock_id: '{{ `{{ default "" .wfdata.work_data.tf_lock_id }}` }}'
+              lock_project: "1"
+        - name: quit if no need to unlock
+          work:
+            type: data
+            content:
+              work_status: '{{ `{{ toString .wfdata.work_data.kube_job_status | eq "true" | and (eq .wfdata.action "plan") | ternary "success" "failure" }}` }}'
+              reason: 'No need to unlock'
+        - name: wait for timeout
+          work:
+            type: suspend
+            content: '{{ printf "tf-lock-%s-%s" (coalesce .wfdata.repo .event.json.repository.full_name) (coalesce .wfdata.number .event.json.number) }}'
+            data:
+              timeout: '{{ default "1h" .wfdata.tf_lock_timeout }}'
+              labels:
+                status: success
+        - name: unlock the tf project
+          work:
+            content: tf_unlock
+            data:
+              tf_lock_id: '{{ `{{ .wfdata.work_data.tf_lock_id }}` }}'
+              lock_project: ""
+              system: job_runner
+        - name: flag unlocked in PR comments
+          work:
+            type: function
+            content:
+              target:
+                system: '{{ default "github" .wfdata.git_system }}'
+                function: createComment
+            data:
+              message: '{{ printf "TF project unlocked: %s" .wfdata.tf_project_dir }}'

@@ -12,17 +12,27 @@ rules:
       content: pipe
       data:
         on_error: exit
-        steps:
+        "*steps":
           - name: check if terraform files changed
             work:
-              content: git_PR_contains
+              content: git_fetch_PR_contains
               data:
-                prefix: terraform/
-          - name: run terraform plan
+                patterns:
+                  - "^terraform\\/"
+          - name: comment with instructions
             work:
-              content: tf_PR_run
+              type: function
+              content:
+                target:
+                  system: '{{ default "github" .wfdata.git_system }}'
+                  function: createComment
               data:
-                action: plan
+                message: |-
+                  <img src='https://placehold.it/30x10/3933ff/000000?text=+'></img> The PR contains terraform changes, below commands are supported in comments.
+                   * `/honeydipper tf plan`  -- Create a plan and lock the project with a configurable timeout
+                   * `/honeydipper tf apply` -- Apply the plan, requires the lock from previous plan
+                   * `/honeydipper tf unlock` -- Unlock the project locked from previous plan
+
   - when:
       source:
         system: github
@@ -32,7 +42,7 @@ rules:
           repository:
             full_name: honeydipper/infrastructure-demo
           comment:
-            body: :regex:^\s*\/honeydipper\s+tf\s+(plan)|(apply)\s*$
+            body: ":regex:^\\s*\\/honeydipper\\s+tf\\s+(plan|apply|unlock)\\s*$"
           issue:
             state: open
     do:
@@ -41,12 +51,13 @@ rules:
         on_error: exit
         repo: '{{ .event.json.repository.full_name }}'
         number: '{{ .event.json.issue.pull_request.url | splitList "/" | last }}'
-        steps:
+        "*steps":
           - name: check if terraform files changed
             work:
-              content: git_PR_contains
+              content: git_fetch_PR_contains
               data:
-                prefix: terraform/
+                patterns: 
+                  - "^terraform\\/"
           - name: get the info of PR
             work:
               type: function
@@ -59,8 +70,14 @@ rules:
                   method: GET
           - name: run terraform action
             work:
+              content: tf_PR_cmd_with_lock
               data:
                 sha: '{{ `{{ .data.json.head.sha }}` }}'
                 branch: '{{ `{{ .data.json.head.ref }}` }}'
                 action: '{{ .event.json.comment.body | trim | splitList " " | last }}'
-              content: tf_PR_run
+                tf_lock_timeout: '5m'
+                tf_project_dir: terraform
+                message_on_success_plan: |-
+                  * <img src='https://placehold.it/30x10/3933ff/000000?text=+'></img> The project `{{ "{{ `{{ .wfdata.tf_project_dir }}` }}" }}` is locked for `{{ `{{ "{{ .wfdata.tf_lock_timeout }}" }}` }}`.
+                  * <img src='https://placehold.it/30x10/c70039/000000?text=+'></img> Type `/honeydipper tf apply` to apply the plan before the time out.
+                  * <img src='https://placehold.it/30x10/3933ff/000000?text=+'></img> Or unlock the project by typing `/honeydipper tf unlock`.
